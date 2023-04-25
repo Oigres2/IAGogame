@@ -142,29 +142,23 @@ class GoState(State):
         opponent = 0 if player == 1 else 1
         own_groups_to_remove = []
         opponent_groups_to_remove = []
-        
 
         for row in range(self.__num_rows):
             for col in range(self.__num_cols):
                 if grid[row][col] == player:
                     group = self.get_group(grid, row, col)
-                    if group not in own_groups_to_remove and self.count_liberties(grid, group) == 0:
+                    liberties = self.get_liberties(grid, group)
+                    if len(liberties) == 0:
                         own_groups_to_remove.append(group)
+
                 elif grid[row][col] == opponent:
                     group = self.get_group(grid, row, col)
-                    if group not in opponent_groups_to_remove and self.count_liberties(grid, group) == 0:
+                    liberties = self.get_liberties(grid, group)
+                    if len(liberties) == 0:
                         opponent_groups_to_remove.append(group)
 
-        if len(own_groups_to_remove) > 1:
+        if len(own_groups_to_remove) > 0 and len(opponent_groups_to_remove) == 0:
             return False
-
-        if len(own_groups_to_remove) == 1 and len(opponent_groups_to_remove) == 0:
-            return False
-
-        if len(own_groups_to_remove) == 0 and len(opponent_groups_to_remove) == 0:
-            if self.clone is not None and grid == self.clone:
-                return False
-
         return True
 
     def update(self, action: GoAction):
@@ -209,27 +203,46 @@ class GoState(State):
     def __remove_opponent_groups_with_zero_liberties(self, row, col, opponent):
         captured_stones = 0
         checked_groups = set()
+
         for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nr, nc = row + dr, col + dc
-            if not (0 <= nr < self.__num_rows and 0 <= nc < self.__num_cols):
-                continue
-            if self.__grid[nr][nc] == opponent:
+
+            if (0 <= nr < self.__num_rows) and (0 <= nc < self.__num_cols) and self.__grid[nr][nc] == opponent:
                 group_id = self.__find_group_id(nr, nc)
+
                 if group_id not in checked_groups:
-                    group_id = tuple(group_id)  # Converta group_id para uma tupla
-                    group = self.__groups[group_id]
-                    if self.__group_liberties(group) == 0:
-                        captured_stones += self.__remove_group(group_id)
                     checked_groups.add(group_id)
+                    group = self.get_group(self.__grid, nr, nc)
+                    can_remove_group = True
+
+                    for stone_row, stone_col in group:
+                        if self.__group_liberties(self.get_group(self.__grid, stone_row, stone_col)) > 0:
+                            can_remove_group = False
+                            break
+
+                    if can_remove_group:
+                        captured_stones += len(group)
+                        self.__remove_group_from_board(group_id, group)
+
         return captured_stones
     
-    def __remove_group(self, group_id):
-        group = self.__groups[group_id]
-        stone_count = len(group)
+    def __remove_group_from_board(self, group_id, group):
         for row, col in group:
             self.__grid[row][col] = GoState.EMPTY_CELL
+
         del self.__groups[group_id]
-        return stone_count
+    
+    
+    def get_liberties(self, grid, group):
+        liberties = set()
+
+        for stone_row, stone_col in group:
+            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                row, col = stone_row + dr, stone_col + dc
+                if 0 <= row < self.__num_rows and 0 <= col < self.__num_cols and grid[row][col] == -1:
+                    liberties.add((row, col))
+
+        return liberties
     
     def __group_liberties(self, group):
         liberties = set()
