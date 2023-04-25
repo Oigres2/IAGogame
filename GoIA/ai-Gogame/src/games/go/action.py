@@ -5,9 +5,13 @@ class GoAction:
     __col: int
     __row: int
 
-    def __init__(self, col: int, row: int):
+    def __init__(self, col=None, row=None, is_pass=False):
         self.__col = col
         self.__row = row
+        self.__is_pass = is_pass
+        
+    def is_pass(self):
+        return self.__is_pass
 
     def get_col(self):
         return self.__col

@@ -8,19 +8,39 @@ class HumanGoPlayer(GoPlayer):
     def __init__(self, name):
         super().__init__(name)
 
+    def get_user_input(self, prompt: str) -> int:
+        while True:
+            try:
+                user_input = input(prompt)
+                return int(user_input)
+            except ValueError:
+                print("Entrada inválida. Por favor, insira um número inteiro válido.")
+
     def get_action(self, state: GoState):
         state.display()
-        print(f"Player {state.get_acting_player()}, choose a column: ")
-        x = int(input())
-        print(f"Player {state.get_acting_player()}, choose a row: ")
-        y = int(input())
 
         while True:
-            # noinspection PyBroadException
-            try:
-                return GoAction(x, y)
-            except Exception:
+            pass_input = input("Digite 'p' para passar a jogada ou 'm' para fazer uma jogada: ")
+
+            if pass_input.lower() == 'p':
+                action = GoAction(is_pass=True)
+            elif pass_input.lower() == 'm':
+                x = self.get_user_input(f"Player {state.get_acting_player()}, escolha uma coluna: ")
+                y = self.get_user_input(f"Player {state.get_acting_player()}, escolha uma linha: ")
+
+                if x is not None and y is not None:
+                    action = GoAction(x, y)
+                else:
+                    print("Valores de coluna e linha inválidos, tente novamente.")
+                    continue
+            else:
+                print("Entrada inválida, tente novamente.")
                 continue
+
+            if state.validate_action(action):
+                return action
+            else:
+                print("Jogada inválida, tente novamente.")
 
     def event_action(self, pos: int, action, new_state: GoState):
         # ignore

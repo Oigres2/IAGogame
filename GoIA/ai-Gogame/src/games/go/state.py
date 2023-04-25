@@ -3,12 +3,13 @@ from typing import Optional
 from games.go.action import GoAction
 from games.go.result import GoResult
 from games.state import State
+from copy import deepcopy
 
 
 class GoState(State):
     EMPTY_CELL = -1
 
-    def __init__(self, num_rows: int = 9):
+    def __init__(self, num_rows: int = 19):
         super().__init__()
 
         if num_rows < 9:
@@ -39,41 +40,34 @@ class GoState(State):
         determine if a winner was found already 
         """
         self.__has_winner = False
+        
+        self.__black_score = 0
+        
+        self.__white_score = 0
+        
+        self.__consecutive_passes = 0
+        
+        self.__groups = {}
+        
 
-    def __check_winner(self, player):
-        # check for 3 across
-        for row in range(0, self.__num_rows):
-            for col in range(0, self.__num_cols - 2):
-                if self.__grid[row][col] == player and \
-                        self.__grid[row][col + 1] == player and \
-                        self.__grid[row][col + 2] == player:
-                    return True
+    def __count_territory(self, player):
+        territory_count = 0
+        for row in range(self.__num_rows):
+            for col in range(self.__num_cols):
+                if self.__grid[row][col] == player:
+                    territory_count += 1
+        return territory_count
 
-        # check for 3 up and down
-        for row in range(0, self.__num_rows - 2):
-            for col in range(0, self.__num_cols):
-                if self.__grid[row][col] == player and \
-                        self.__grid[row + 1][col] == player and \
-                        self.__grid[row + 2][col] == player:
-                    return True
+    def __check_winner(self):
+        black_score = self.__count_territory(0)
+        white_score = self.__count_territory(1) + 6.5  # Komi
 
-        # check upward diagonal
-        for row in range(0, self.__num_rows):
-            for col in range(0, self.__num_cols - 2):
-                if self.__grid[row][col] == player and \
-                        self.__grid[row - 1][col + 1] == player and \
-                        self.__grid[row - 2][col + 2] == player:
-                    return True
-
-        # check downward diagonal
-        for row in range(0, self.__num_rows - 2):
-            for col in range(0, self.__num_cols - 2):
-                if self.__grid[row][col] == player and \
-                        self.__grid[row + 1][col + 1] == player and \
-                        self.__grid[row + 2][col + 2] == player:
-                    return True
-
-        return False
+        if black_score > white_score:
+            return 0, black_score, white_score
+        elif white_score > black_score:
+            return 1, black_score, white_score
+        else:
+            return "DRAW", black_score, white_score
 
     def get_grid(self):
         return self.__grid
@@ -82,9 +76,13 @@ class GoState(State):
         return 2
 
     def validate_action(self, action: GoAction) -> bool:
+        if action.is_pass():
+            return True
+        
         col = action.get_col()
         row = action.get_row()
-
+        player = self.__acting_player
+    
         # valid column
         if col < 0 or col >= self.__num_cols:
             return False
@@ -95,6 +93,77 @@ class GoState(State):
         # check empty or full
         if self.__grid[row][col] != GoState.EMPTY_CELL:
             return False
+        
+        copy_grid = deepcopy(self.__grid)
+        copy_grid[row][col] = player
+        if not self.is_legal_position(copy_grid, player):
+            return False
+
+        return True
+    
+    def get_adjacent_positions(self, row: int, col: int):
+        adjacent_positions = []
+        if row > 0:
+            adjacent_positions.append((row - 1, col))
+        if row < self.__num_rows - 1:
+            adjacent_positions.append((row + 1, col))
+        if col > 0:
+            adjacent_positions.append((row, col - 1))
+        if col < self.__num_cols - 1:
+            adjacent_positions.append((row, col + 1))
+        return adjacent_positions
+
+    def get_group(self, grid, row: int, col: int):
+        color = grid[row][col]
+        if color == GoState.EMPTY_CELL:
+            return []
+
+        visited = set()
+        group = [(row, col)]
+
+        for r, c in group:
+            visited.add((r, c))
+            for adj_row, adj_col in self.get_adjacent_positions(r, c):
+                if (adj_row, adj_col) not in visited and grid[adj_row][adj_col] == color:
+                    group.append((adj_row, adj_col))
+                    visited.add((adj_row, adj_col))
+
+        return group
+
+    def count_liberties(self, grid, group):
+        liberties = set()
+        for row, col in group:
+            for adj_row, adj_col in self.get_adjacent_positions(row, col):
+                if grid[adj_row][adj_col] == GoState.EMPTY_CELL:
+                    liberties.add((adj_row, adj_col))
+        return len(liberties)
+
+    def is_legal_position(self, grid, player):
+        opponent = 0 if player == 1 else 1
+        own_groups_to_remove = []
+        opponent_groups_to_remove = []
+        
+
+        for row in range(self.__num_rows):
+            for col in range(self.__num_cols):
+                if grid[row][col] == player:
+                    group = self.get_group(grid, row, col)
+                    if group not in own_groups_to_remove and self.count_liberties(grid, group) == 0:
+                        own_groups_to_remove.append(group)
+                elif grid[row][col] == opponent:
+                    group = self.get_group(grid, row, col)
+                    if group not in opponent_groups_to_remove and self.count_liberties(grid, group) == 0:
+                        opponent_groups_to_remove.append(group)
+
+        if len(own_groups_to_remove) > 1:
+            return False
+
+        if len(own_groups_to_remove) == 1 and len(opponent_groups_to_remove) == 0:
+            return False
+
+        if len(own_groups_to_remove) == 0 and len(opponent_groups_to_remove) == 0:
+            if self.clone is not None and grid == self.clone:
+                return False
 
         return True
 
@@ -102,17 +171,120 @@ class GoState(State):
         col = action.get_col()
         row = action.get_row()
 
-        # update chosen coordinates
-        if self.__grid[row][col] < 0:
-            self.__grid[row][col] = self.__acting_player
+        # If both players passed, check for a winner
+        if action.is_pass():
+            self.__consecutive_passes += 1
+            print(f"Player {self.__acting_player} passou o turno")
+            if self.__consecutive_passes >= 2:
+                winner, black_score, white_score = self.__check_winner()
+                self.__has_winner = True
+                print(f"O jogo terminou. Vencedor: Player {winner}, Pontuação do jogador preto (Player 0): {black_score}, Pontuação do jogador branco (Player 1): {white_score}")
+        else:
+            self.__consecutive_passes = 0
+            # update chosen coordinates
+            if self.__grid[row][col] < 0:
+                self.__grid[row][col] = self.__acting_player
+            
+            new_group_id = self.__find_group_id(row, col)
+            new_group = self.get_group(self.__grid, row, col)
+            self.__add_group_to_groups(tuple(new_group_id), new_group)
 
-        # determine if there is a winner
-        self.__has_winner = self.__check_winner(self.__acting_player)
+            # remove opponent's groups with zero liberties
+            opponent = 1 if self.__acting_player == 0 else 0
+            captured_stones = self.__remove_opponent_groups_with_zero_liberties(row, col, opponent)
+
+            # update player's score
+            if self.__acting_player == 0:
+                self.__black_score += captured_stones
+            else:
+                self.__white_score += captured_stones
 
         # switch to next player
         self.__acting_player = 1 if self.__acting_player == 0 else 0
 
         self.__turns_count += 1
+        
+        self.__update_groups()
+        
+    def __remove_opponent_groups_with_zero_liberties(self, row, col, opponent):
+        captured_stones = 0
+        checked_groups = set()
+        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nr, nc = row + dr, col + dc
+            if not (0 <= nr < self.__num_rows and 0 <= nc < self.__num_cols):
+                continue
+            if self.__grid[nr][nc] == opponent:
+                group_id = self.__find_group_id(nr, nc)
+                if group_id not in checked_groups:
+                    group_id = tuple(group_id)  # Converta group_id para uma tupla
+                    group = self.__groups[group_id]
+                    if self.__group_liberties(group) == 0:
+                        captured_stones += self.__remove_group(group_id)
+                    checked_groups.add(group_id)
+        return captured_stones
+    
+    def __remove_group(self, group_id):
+        group = self.__groups[group_id]
+        stone_count = len(group)
+        for row, col in group:
+            self.__grid[row][col] = GoState.EMPTY_CELL
+        del self.__groups[group_id]
+        return stone_count
+    
+    def __group_liberties(self, group):
+        liberties = set()
+        for row, col in group:
+            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                nr, nc = row + dr, col + dc
+                if (0 <= nr < self.__num_rows) and (0 <= nc < self.__num_cols) and self.__grid[nr][nc] == GoState.EMPTY_CELL:
+                    liberties.add((nr, nc))
+        return len(liberties)
+    
+    def __find_group_id(self, row, col, visited=None):
+        if visited is None:
+            visited = set()
+
+        if (row, col) in visited:
+            return None
+
+        visited.add((row, col))
+        stone = self.__grid[row][col]
+
+        if stone == GoState.EMPTY_CELL:
+            return None
+
+        # Verificar se a posição (row, col) pertence a algum grupo existente
+        for group_id, group in self.__groups.items():
+            if (row, col) in group:
+                return group_id
+
+        group_id = {(row, col)}
+
+        for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            nr, nc = row + dr, col + dc
+
+            if (0 <= nr < self.__num_rows) and (0 <= nc < self.__num_cols):
+                if self.__grid[nr][nc] == stone:
+                    neighbor_group = self.__find_group_id(nr, nc, visited)
+                    if neighbor_group is not None:
+                        group_id.update(neighbor_group)
+
+        return group_id
+    
+    def __add_group_to_groups(self, group_id, group):
+        self.__groups[group_id] = group
+    
+    def __update_groups(self):
+        new_groups = {}
+        for row in range(self.__num_rows):
+            for col in range(self.__num_cols):
+                if self.__grid[row][col] != GoState.EMPTY_CELL:
+                    group_id = self.__find_group_id(row, col)
+                    if group_id not in new_groups:
+                        new_groups[group_id] = {(row, col)}
+                    else:
+                        new_groups[group_id].add((row, col))
+        self.__groups = new_groups   
 
     def __display_cell(self, row, col):
         print({
@@ -123,13 +295,13 @@ class GoState(State):
 
     def __display_numbers(self):
         for col in range(0, self.__num_cols):
-            print(' ', end="")
+            print('  ', end="")
             print(col, end="")
         print("")
 
     def __display_separator(self):
         for col in range(0, self.__num_cols):
-            print("--", end="")
+            print("---", end="")
         print("-")
 
     def display(self):
@@ -141,7 +313,7 @@ class GoState(State):
             print('|', end="")
             for col in range(0, self.__num_cols):
                 self.__display_cell(row, col)
-                print('|', end="")
+                print(' |', end="")
             print("")
             self.__display_separator()
 
