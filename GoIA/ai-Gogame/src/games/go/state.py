@@ -178,7 +178,7 @@ class GoState(State):
             # update chosen coordinates
             if self.__grid[row][col] < 0:
                 self.__grid[row][col] = self.__acting_player
-            
+           
             new_group_id = self.__find_group_id(row, col)
             new_group = self.get_group(self.__grid, row, col)
             self.__add_group_to_groups(tuple(new_group_id), new_group)
@@ -199,7 +199,7 @@ class GoState(State):
         self.__turns_count += 1
         
         self.__update_groups()
-        
+ 
     def __remove_opponent_groups_with_zero_liberties(self, row, col, opponent):
         captured_stones = 0
         checked_groups = set()

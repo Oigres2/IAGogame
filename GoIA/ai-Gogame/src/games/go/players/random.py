@@ -14,7 +14,7 @@ class RandomGoPlayer(GoPlayer):
     def get_action(self, state: GoState):
         # Escolha aleatoriamente entre passar e colocar uma peça
         if random() < 0.1:  # 10% de chance de passar
-            return GoAction(-1, -1)  # Ação de passar o turno
+            return GoAction(-1, -1, True)  # Ação de passar o turno
         else:
             # Tente colocar peças aleatórias até encontrar uma ação válida
             while True:
