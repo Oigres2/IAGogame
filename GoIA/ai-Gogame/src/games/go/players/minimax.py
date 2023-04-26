@@ -17,74 +17,9 @@ class MinimaxGoPlayer(GoPlayer):
     '''
 
     def __heuristic(self, state: GoState):
-        grid = state.get_grid()
-        longest = 0
-
-        # check each line
-        for row in range(0, state.get_num_rows()):
-            seq = 0
-            for col in range(0, state.get_num_cols()):
-                if grid[row][col] == self.get_current_pos():
-                    seq += 1
-                else:
-                    if seq > longest:
-                        longest = seq
-                    seq = 0
-
-            if seq > longest:
-                longest = seq
-
-        # check each column
-        for col in range(0, state.get_num_cols()):
-            seq = 0
-            for row in range(0, state.get_num_rows()):
-                if grid[row][col] == self.get_current_pos():
-                    seq += 1
-                else:
-                    if seq > longest:
-                        longest = seq
-                    seq = 0
-
-            if seq > longest:
-                longest = seq
-
-        # check each upward diagonal
-        for row in range(3, state.get_num_rows()):
-            for col in range(0, state.get_num_cols() - 3):
-                seq1 = (1 if grid[row][col] == self.get_current_pos() else 0) + \
-                       (1 if grid[row - 1][col + 1] == self.get_current_pos() else 0)
-
-                seq2 = (1 if grid[row - 1][col + 1] == self.get_current_pos() else 0) + \
-                       (1 if grid[row - 2][col + 2] == self.get_current_pos() else 0)
-            
-
-                if seq1 > longest:
-                    longest = seq1
-
-                if seq2 > longest:
-                    longest = seq2
-
-        # check each downward diagonal
-        for row in range(0, state.get_num_rows() - 3):
-            for col in range(0, state.get_num_cols() - 3):
-                seq1 = (1 if grid[row][col] == self.get_current_pos() else 0) + \
-                       (1 if grid[row + 1][col + 1] == self.get_current_pos() else 0)
-
-                seq2 = (1 if grid[row + 1][col + 1] == self.get_current_pos() else 0) + \
-                       (1 if grid[row + 2][col + 2] == self.get_current_pos() else 0)
-
-                if seq1 > longest:
-                    longest = seq1
-
-                if seq2 > longest:
-                    longest = seq2
-
-        return longest
-
-    """Implementation of minimax search (recursive, with alpha/beta pruning) :param state: the state for which the 
-    search should be made :param depth: maximum depth of the search :param alpha: to optimize the search :param beta: 
-    to optimize the search :param is_initial_node: if true, the function will return the action with max ev, 
-    otherwise it return the max ev (ev = expected value) """
+        player_score = state.calculate_score(self.get_current_pos())
+        opponent_score = state.calculate_score(3 - self.get_current_pos())  # 3 - player's position gets the opponent's position
+        return player_score - opponent_score
 
     def minimax(self, state: GoState, depth: int, alpha: int = -math.inf, beta: int = math.inf,
                 is_initial_node: bool = True):

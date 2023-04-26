@@ -50,7 +50,7 @@ class GoState(State):
         self.__groups = {}
         
 
-    def __count_territory(self, player):
+    def _count_territory(self, player):
         territory_count = 0
         for row in range(self.__num_rows):
             for col in range(self.__num_cols):
@@ -59,8 +59,8 @@ class GoState(State):
         return territory_count
 
     def __check_winner(self):
-        black_score = self.__count_territory(0)
-        white_score = self.__count_territory(1) + 6.5  # Komi
+        black_score = self._count_territory(0)
+        white_score = self._count_territory(1) + 6.5  # Komi
 
         if black_score > white_score:
             return 0, black_score, white_score
@@ -178,7 +178,7 @@ class GoState(State):
             # update chosen coordinates
             if self.__grid[row][col] < 0:
                 self.__grid[row][col] = self.__acting_player
-           
+                
             new_group_id = self.__find_group_id(row, col)
             new_group = self.get_group(self.__grid, row, col)
             self.__add_group_to_groups(tuple(new_group_id), new_group)
@@ -195,10 +195,25 @@ class GoState(State):
 
         # switch to next player
         self.__acting_player = 1 if self.__acting_player == 0 else 0
+                
+        if self.no_valid_moves_left():
+            winner, black_score, white_score = self.__check_winner()
+            self.__has_winner = True
+            print(f"O jogo terminou. Vencedor: Player {winner}, Pontuação do jogador preto (Player 0): {black_score}, Pontuação do jogador branco (Player 1): {white_score}")
 
         self.__turns_count += 1
         
         self.__update_groups()
+        
+        
+    def no_valid_moves_left(self):
+        for row in range(self.__num_rows):
+            for col in range(self.__num_cols):
+                if self.__grid[row][col] == GoState.EMPTY_CELL:
+                    action = GoAction(col, row)
+                    if self.validate_action(action):
+                        return False
+        return True
  
     def __remove_opponent_groups_with_zero_liberties(self, row, col, opponent):
         captured_stones = 0
@@ -230,7 +245,8 @@ class GoState(State):
         for row, col in group:
             self.__grid[row][col] = GoState.EMPTY_CELL
 
-        del self.__groups[group_id]
+        if group_id in self.__groups:
+            del self.__groups[group_id]
     
     
     def get_liberties(self, grid, group):
@@ -282,7 +298,7 @@ class GoState(State):
                     if neighbor_group is not None:
                         group_id.update(neighbor_group)
 
-        return group_id
+        return frozenset(group_id)
     
     def __add_group_to_groups(self, group_id, group):
         self.__groups[group_id] = group
@@ -294,7 +310,7 @@ class GoState(State):
                 if self.__grid[row][col] != GoState.EMPTY_CELL:
                     group_id = self.__find_group_id(row, col)
                     if group_id not in new_groups:
-                        new_groups[group_id] = {(row, col)}
+                        new_groups[group_id] = set({(row, col)})
                     else:
                         new_groups[group_id].add((row, col))
         self.__groups = new_groups   

@@ -11,9 +11,10 @@ class RandomGoPlayer(GoPlayer):
     def __init__(self, name):
         super().__init__(name)
 
-    def get_action(self, state: GoState):
+    def get_action(self, state: GoState):  
+        no_moves_left = state.no_valid_moves_left()   
         # Escolha aleatoriamente entre passar e colocar uma peça
-        if random() < 0.1:  # 10% de chance de passar
+        if random() < 0.1 or no_moves_left:  # 10% de chance de passar
             return GoAction(-1, -1, True)  # Ação de passar o turno
         else:
             # Tente colocar peças aleatórias até encontrar uma ação válida
@@ -23,9 +24,7 @@ class RandomGoPlayer(GoPlayer):
                     return action
 
     def event_action(self, pos: int, action, new_state: State):
-        # ignore
         pass
 
     def event_end_game(self, final_state: State):
-        # ignore
         pass

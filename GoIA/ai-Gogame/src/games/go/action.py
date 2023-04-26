@@ -1,6 +1,6 @@
 class GoAction:
     """
-    a tictactoe action is simple - it only takes the value of the column and the row to play
+    a Go action is simple - it only takes the value of the column and the row to play
     """
     __col: int
     __row: int

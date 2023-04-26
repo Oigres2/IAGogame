@@ -11,29 +11,38 @@ class GreedyGoPlayer(GoPlayer):
         super().__init__(name)
 
     def get_action(self, state: GoState):
-        grid = state.get_grid()
+        valid_actions = []
+        for i in range(state.get_num_rows()):
+            for j in range(state.get_num_cols()):
+                action = GoAction(i, j)
+                if state.validate_action(action):
+                    valid_actions.append(action)
 
-        selected_col = None
-        max_count = 0
+        if len(valid_actions) <= 0:
+            return GoAction(is_pass = True)
 
-        for col in range(0, state.get_num_cols()):
-            if not state.validate_action(GoAction(col)):
-                continue
+        # Avalia o ganho de cada ação válida e seleciona a melhor
+        best_gain = -1
+        best_actions = []
 
-            count = 0
-            for row in range(0, state.get_num_rows()):
-                if grid[row][col] == self.get_current_pos():
-                    count += 1
+        for action in valid_actions:
+            new_state = state.clone()
+            new_state.update(action)
 
-            # it swap the column if we exceed the count. if the count of chips is the same, we swap 50% of the times
-            if selected_col is None or count > max_count or (count == max_count and choice([False, True])):
-                selected_col = col
-                max_count = count
+            opponent = 1 if state.get_acting_player() == 0 else 0
+            captured_count = new_state._count_territory(opponent)
+            gain = captured_count - state._count_territory(opponent)
 
-        if selected_col is None:
-            raise Exception("There is no valid action")
+            if gain > best_gain:
+                best_gain = gain
+                best_actions = [action]
+            elif gain == best_gain:
+                best_actions.append(action)
 
-        return GoAction(selected_col)
+        if best_actions:
+            return choice(best_actions)
+        else:
+            return GoAction(is_pass=True)
 
     def event_action(self, pos: int, action, new_state: State):
         # ignore

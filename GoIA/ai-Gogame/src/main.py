@@ -2,8 +2,7 @@ from games.game_simulator import GameSimulator
 from games.go.players.human import HumanGoPlayer
 from games.go.players.random import RandomGoPlayer
 from games.go.players.minimax import MinimaxGoPlayer
-from games.go.players.offensive import OffensiveGoPlayer
-from games.go.players.defensive import DefensiveGoPlayer
+from games.go.players.greedy import GreedyGoPlayer
 from games.go.simulator import GoSimulator
 
 
@@ -26,8 +25,8 @@ def main():
     ttt_simulations = [
         {
             "name": "Go - Human VS Human",
-            "player1": HumanGoPlayer("Human"),
-            "player2": RandomGoPlayer("Human")
+            "player1": RandomGoPlayer("Human"),
+            "player2": RandomGoPlayer("Greedy")
         }  #  ,
         # {
         #     "name": "Go - Random VS Random",
