@@ -25,10 +25,10 @@ def main():
     ttt_simulations = [
         {
             "name": "Go - Human VS Human",
-            "player1": RandomGoPlayer("Human"),
-            "player2": RandomGoPlayer("Greedy")
+            "player1": GreedyGoPlayer("Greedy"),
+            "player0": RandomGoPlayer("Human")
         }  #  ,
-        # {
+        # {S
         #     "name": "Go - Random VS Random",
         #     "player1": RandomGoPlayer("Random 1"),
         #     "player2": RandomGoPlayer("Random 2")
@@ -46,7 +46,7 @@ def main():
     ]
 
     for sim in ttt_simulations:
-        run_simulation(sim["name"], GoSimulator(sim["player1"], sim["player2"]), num_iterations)
+        run_simulation(sim["name"], GoSimulator(sim["player1"], sim["player0"]), num_iterations)
 
 
 if __name__ == "__main__":

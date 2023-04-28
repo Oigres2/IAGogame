@@ -61,7 +61,7 @@ class GoState(State):
     def __check_winner(self):
         black_score = self._count_territory(0)
         white_score = self._count_territory(1) + 6.5  # Komi
-
+        
         if black_score > white_score:
             return 0, black_score, white_score
         elif white_score > black_score:
@@ -170,6 +170,7 @@ class GoState(State):
             self.__consecutive_passes += 1
             print(f"Player {self.__acting_player} passou o turno")
             if self.__consecutive_passes >= 2:
+                print("Both players passed, game is ending")
                 winner, black_score, white_score = self.__check_winner()
                 self.__has_winner = True
                 print(f"O jogo terminou. Vencedor: Player {winner}, Pontuação do jogador preto (Player 0): {black_score}, Pontuação do jogador branco (Player 1): {white_score}")
@@ -240,6 +241,17 @@ class GoState(State):
                         self.__remove_group_from_board(group_id, group)
 
         return captured_stones
+    
+    def _count_captured_pieces(self, player: int):
+        captured_count = 0
+        for row in range(self.__num_rows):
+            for col in range(self.__num_cols):
+                if self.__grid[row][col] == (1 if player == 0 else 0):  # if the cell belongs to the opponent
+                    group = self.get_group(self.__grid, row, col)
+                    if self.count_liberties(self.__grid, group) == 0:  # if the group has no liberties
+                        captured_count += len(group)  # add the size of the group to the captured count
+                        print(f"Player {player} would capture {len(group)} pieces by playing at ({row}, {col})")
+        return captured_count
     
     def __remove_group_from_board(self, group_id, group):
         for row, col in group:
