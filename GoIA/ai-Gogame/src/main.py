@@ -25,7 +25,7 @@ def main():
     ttt_simulations = [
         {
             "name": "Go - Human VS Human",
-            "player1": GreedyGoPlayer("Greedy"),
+            "player1": MinimaxGoPlayer("Greedy"),
             "player0": RandomGoPlayer("Human")
         }  #  ,
         # {S

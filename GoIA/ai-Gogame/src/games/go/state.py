@@ -49,6 +49,8 @@ class GoState(State):
         
         self.__groups = {}
         
+    def get_grid(self):
+        return self.__grid
 
     def _count_territory(self, player):
         territory_count = 0
@@ -68,7 +70,7 @@ class GoState(State):
             return 1, black_score, white_score
         else:
             return "DRAW", black_score, white_score
-
+        
     def get_grid(self):
         return self.__grid
 

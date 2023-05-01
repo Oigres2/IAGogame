@@ -4,11 +4,13 @@ from games.go.player import GoPlayer
 from games.go.result import GoResult
 from games.go.state import GoState
 from games.state import State
+from games.go.action import GoAction
 
 
 class MinimaxGoPlayer(GoPlayer):
 
     def __init__(self, name):
+        self.action_count = 0
         super().__init__(name)
 
     '''
@@ -17,9 +19,33 @@ class MinimaxGoPlayer(GoPlayer):
     '''
 
     def __heuristic(self, state: GoState):
-        player_score = state.calculate_score(self.get_current_pos())
-        opponent_score = state.calculate_score(3 - self.get_current_pos())  # 3 - player's position gets the opponent's position
-        return player_score - opponent_score
+        player_score = state._count_captured_pieces(self.get_current_pos())
+        opponent_score = state._count_captured_pieces(1 - self.get_current_pos())
+
+        player_territory = 0
+        opponent_territory = 0
+
+        player_potential_captures = 0
+        opponent_potential_captures = 0
+
+        for i in range(state.get_num_rows()):
+            for j in range(state.get_num_cols()):
+                cell = state.get_grid()[i][j]
+                neighbours = state.get_adjacent_positions(i, j)
+
+                if cell == -1:  # if the cell is empty
+                    if all(state.get_grid()[n[0]][n[1]] == self.get_current_pos() for n in neighbours):
+                        player_territory += 1
+                    elif all(state.get_grid()[n[0]][n[1]] == 1 - self.get_current_pos() for n in neighbours):
+                        opponent_territory += 1
+                elif cell == self.get_current_pos():  # if the cell is owned by the player
+                    if any(state.get_grid()[n[0]][n[1]] == 1 - self.get_current_pos() for n in neighbours):
+                        player_potential_captures += 1
+                elif cell == 1 - self.get_current_pos():  # if the cell is owned by the opponent
+                    if any(state.get_grid()[n[0]][n[1]] == self.get_current_pos() for n in neighbours):
+                        opponent_potential_captures += 1
+
+        return (player_score + player_territory + player_potential_captures) - (opponent_score + opponent_territory + opponent_potential_captures)
 
     def minimax(self, state: GoState, depth: int, alpha: int = -math.inf, beta: int = math.inf,
                 is_initial_node: bool = True):
@@ -63,7 +89,12 @@ class MinimaxGoPlayer(GoPlayer):
             return value
 
     def get_action(self, state: GoState):
-        return self.minimax(state, 5)
+        self.action_count += 1
+
+        if self.action_count > 39:
+            return GoAction(is_pass=True)
+        
+        return self.minimax(state, 2)
 
     def event_action(self, pos: int, action, new_state: State):
         # ignore
