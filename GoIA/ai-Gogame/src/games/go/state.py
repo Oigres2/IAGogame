@@ -14,31 +14,21 @@ class GoState(State):
 
         if num_rows < 9:
             raise Exception("the number of rows must be 9 or over")
-
-        """
-        the dimensions of the board
-        """
+        
+        """the dimensions of the board"""
         self.__num_rows = num_rows
         self.__num_cols = num_rows
 
-        """
-        the grid
-        """
+        """the grid"""
         self.__grid = [[GoState.EMPTY_CELL for _i in range(self.__num_rows)] for _j in range(self.__num_cols)]
 
-        """
-        counts the number of turns in the current game
-        """
+        """counts the number of turns in the current game"""
         self.__turns_count = 1
 
-        """
-        the index of the current acting player
-        """
+        """the index of the current acting player"""
         self.__acting_player = 0
 
-        """
-        determine if a winner was found already 
-        """
+        """determine if a winner was found already """
         self.__has_winner = False
         
         self.__black_score = 0
@@ -175,7 +165,7 @@ class GoState(State):
                 print("Both players passed, game is ending")
                 winner, black_score, white_score = self.__check_winner()
                 self.__has_winner = True
-                print(f"O jogo terminou. Vencedor: Player {winner}, Pontuação do jogador preto (Player 0): {black_score}, Pontuação do jogador branco (Player 1): {white_score}")
+                print(f"O jogo terminou. Vencedor: Player {winner}, Pontuação do jogador preto (Player 0(X)): {black_score}, Pontuação do jogador branco (Player 1(O)): {white_score}")
         else:
             self.__consecutive_passes = 0
             # update chosen coordinates
@@ -202,7 +192,7 @@ class GoState(State):
         if self.no_valid_moves_left():
             winner, black_score, white_score = self.__check_winner()
             self.__has_winner = True
-            print(f"O jogo terminou. Vencedor: Player {winner}, Pontuação do jogador preto (Player 0): {black_score}, Pontuação do jogador branco (Player 1): {white_score}")
+            print(f"O jogo terminou. Vencedor: Player {winner}, Pontuação do jogador preto (Player 0(X)): {black_score}, Pontuação do jogador branco (Player 1(O)): {white_score}")
 
         self.__turns_count += 1
         
