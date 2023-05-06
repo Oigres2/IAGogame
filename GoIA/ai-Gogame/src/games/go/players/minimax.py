@@ -1,4 +1,5 @@
 import math
+import random
 
 from games.go.player import GoPlayer
 from games.go.result import GoResult
@@ -68,8 +69,10 @@ class MinimaxGoPlayer(GoPlayer):
             selected_action = None
 
             for action in state.get_possible_actions():
+                new_state = state.clone()
+                new_state.update(action)
                 pre_value = value
-                value = max(value, self.minimax(state.sim_play(action), depth - 1, alpha, beta, False))
+                value = max(value, self.minimax(new_state, depth - 1, alpha, beta, False))
                 if value > pre_value:
                     selected_action = action
                 if value > beta:
@@ -82,11 +85,14 @@ class MinimaxGoPlayer(GoPlayer):
         else:
             value = math.inf
             for action in state.get_possible_actions():
-                value = min(value, self.minimax(state.sim_play(action), depth - 1, alpha, beta, False))
+                new_state = state.clone()
+                new_state.update(action)
+                value = min(value, self.minimax(new_state, depth - 1, alpha, beta, False))
                 if value < alpha:
                     break
                 beta = min(beta, value)
             return value
+
 
     def get_action(self, state: GoState):
         self.action_count += 1
@@ -94,7 +100,16 @@ class MinimaxGoPlayer(GoPlayer):
         if self.action_count > 39:
             return GoAction(is_pass=True)
         
+        # Introduce some randomness in the initial moves
+        if self.action_count < 3:
+            possible_actions = state.get_possible_actions()
+            return random.choice(possible_actions)
+        
         return self.minimax(state, 2)
+    
+    def event_new_game(self):
+        super().event_new_game()
+        self.action_count = 0
 
     def event_action(self, pos: int, action, new_state: State):
         # ignore

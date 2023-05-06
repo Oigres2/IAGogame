@@ -10,7 +10,6 @@ def run_simulation(desc: str, simulator: GameSimulator, iterations: int):
     print(f"----- {desc} -----")
 
     for i in range(0, iterations):
-        simulator.change_player_positions()
         simulator.run_simulation()
 
     print("Results for the game:")
@@ -36,7 +35,7 @@ def main():
                 game_choice = input("Enter your choice: ")
 
                 if game_choice == "1":
-                    run_simulation("Go - Human VS Human", GoSimulator(HumanGoPlayer("Human 1"), HumanGoPlayer("Human 2")), 1)
+                    run_simulation("Go - Human VS Human", GoSimulator(HumanGoPlayer("Human 0"), HumanGoPlayer("Human 1")), 1)
                 elif game_choice == "2":
                     while True:
                         print("\n----- SELECT DIFFICULTY -----\n")
@@ -58,14 +57,17 @@ def main():
                             print("Invalid choice, please try again.")
                             continue
 
-                        run_simulation(f"Go - Human VS {player.get_name}", GoSimulator(HumanGoPlayer("Human"), player), 1)
+                        run_simulation(f"Go - Human VS {player.get_name()}", GoSimulator(HumanGoPlayer("Human"), player), 1)
                         break
                 elif game_choice == "3":
                     while True:
                         print("\n----- SELECT DIFFICULTY -----\n")
-                        print("1. Easy (Random)")
-                        print("2. Medium (Greedy)")
-                        print("3. Hard (Minimax)")
+                        print("1. Easy (Random) vs Random")
+                        print("2. Medium (Greedy) vs Greedy")
+                        print("3. Hard (Minimax) vs Minimax")
+                        print("4. Random vs Greedy")
+                        print("5. Random vs Minimax")
+                        print("6. Greedy vs Minimax")
                         print("0. Go back")
                         difficulty_choice = input("Enter your choice: ")
 
@@ -78,13 +80,25 @@ def main():
                         elif difficulty_choice == "3":
                             player1 = MinimaxGoPlayer("Minimax 1")
                             player2 = MinimaxGoPlayer("Minimax 2")
+                        elif difficulty_choice == "4":
+                            player1 = RandomGoPlayer("Random")
+                            player2 = GreedyGoPlayer("Greedy")
+                        elif difficulty_choice == "5":
+                            player1 = RandomGoPlayer("Random")
+                            player2 = MinimaxGoPlayer("Minimax")
+                        elif difficulty_choice == "6":
+                            player1 = GreedyGoPlayer("Greedy")
+                            player2 = MinimaxGoPlayer("Minimax")
                         elif difficulty_choice == "0":
                             break
                         else:
                             print("Invalid choice, please try again.")
                             continue
-
-                        run_simulation(f"Go - {player1.get_name} VS {player2.get_name}", GoSimulator(player1, player2), 1)
+                        
+                        print("\n----- SELECT NUMBER OF ITERATIONS -----\n")
+                        iterations = int(input("Enter the number of iterations: "))
+                        
+                        run_simulation(f"Go - {player1.get_name()} VS {player2.get_name()}", GoSimulator(player1, player2), iterations)
                         break
                 elif game_choice == "0":
                     break

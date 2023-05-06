@@ -39,6 +39,8 @@ class GoState(State):
         
         self.__groups = {}
         
+        self.__captured_pieces = {0: 0, 1: 0}
+        
     def get_grid(self):
         return self.__grid
 
@@ -51,9 +53,15 @@ class GoState(State):
         return territory_count
 
     def __check_winner(self):
-        black_score = self._count_territory(0)
-        white_score = self._count_territory(1) + 6.5  # Komi
-        
+        black_territory = self._count_territory(0)
+        white_territory = self._count_territory(1)
+
+        black_captured = self._count_captured_pieces(0)
+        white_captured = self._count_captured_pieces(1)
+
+        black_score = black_territory + black_captured
+        white_score = white_territory + white_captured + 6.5  # Komi
+
         if black_score > white_score:
             return 0, black_score, white_score
         elif white_score > black_score:
@@ -230,6 +238,7 @@ class GoState(State):
 
                     if can_remove_group:
                         captured_stones += len(group)
+                        self.__captured_pieces[self.__acting_player] += len(group)
                         self.__remove_group_from_board(group_id, group)
 
         return captured_stones
@@ -243,7 +252,7 @@ class GoState(State):
                     if self.count_liberties(self.__grid, group) == 0:  # if the group has no liberties
                         captured_count += len(group)  # add the size of the group to the captured count
                         print(f"Player {player} would capture {len(group)} pieces by playing at ({row}, {col})")
-        return captured_count
+        return self.__captured_pieces[player]
     
     def __remove_group_from_board(self, group_id, group):
         for row, col in group:

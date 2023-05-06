@@ -14,7 +14,7 @@ class GreedyGoPlayer(GoPlayer):
     def get_action(self, state: GoState):
         self.action_count += 1
 
-        if self.action_count > 38:
+        if self.action_count > 39:
             return GoAction(is_pass=True)
 
         valid_actions = []
@@ -28,7 +28,7 @@ class GreedyGoPlayer(GoPlayer):
                     new_state.update(action)
                     
                     opponent = 1 if state.get_acting_player() == 0 else 0
-                    captured_count = new_state._count_captured_pieces(action)
+                    captured_count = new_state._count_captured_pieces(state.get_acting_player())
                     
                     if captured_count > 0:
                         capturing_actions.append(action)
@@ -43,6 +43,10 @@ class GreedyGoPlayer(GoPlayer):
         else:
             return GoAction(is_pass=True)
         
+    def event_new_game(self):
+        super().event_new_game()
+        self.action_count = 0
+    
     def event_action(self, pos: int, action, new_state: State):
         # ignore
         pass
